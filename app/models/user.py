@@ -1,6 +1,6 @@
 from app.models.base import Base
 
-from sqlalchemy import Boolean, Integer, String
+from sqlalchemy import Boolean, Integer, String, true
 from sqlalchemy.orm import mapped_column, Mapped
 
 
@@ -32,5 +32,6 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
-        nullable=False
+        server_default=true(),
+        nullable=False,
     )
