@@ -1,0 +1,61 @@
+from fastapi import Depends, APIRouter, HTTPException
+
+from app.core.exceptions import EmailAlreadyExists, UsernameAlreadyExists
+from app.database import get_db
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.user import User
+from app.services.user import create_user_service
+from app.schemas.user import UserCreate
+
+
+router = APIRouter(
+    prefix="/users",
+    tags=["users"],
+)
+
+
+@router.get("/{user_id}")
+async def get_user(
+    user_id: int,
+    session: AsyncSession = Depends(get_db),
+):
+    user = await session.get(User, user_id)
+
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+    }
+
+
+@router.post("/")
+async def create_user(
+    data: UserCreate,
+    session: AsyncSession = Depends(get_db),
+):
+    try:
+        user = await create_user_service(session, data)
+
+        await session.commit()
+
+    except EmailAlreadyExists:
+        raise HTTPException(
+            status_code=409,
+            detail="Такой email уже зарегистрирован",
+        )
+    except UsernameAlreadyExists:
+        raise HTTPException(
+            status_code=409,
+            detail="Такой username уже занят",
+        )
+    
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+    }
