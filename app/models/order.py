@@ -1,7 +1,8 @@
 from app.models.base import Base
 
 from sqlalchemy import Integer, String, ForeignKey
-from sqlalchemy.orm import mapped_column, Mapped
+from sqlalchemy.orm import mapped_column, Mapped, relationship
+
 
 
 class Order(Base):
@@ -26,5 +27,9 @@ class Order(Base):
         Integer,
         ForeignKey("users.id"),
         nullable=False
+    )
+
+    user: Mapped["User"] = relationship(  # type: ignore
+        back_populates="orders"
     )
 

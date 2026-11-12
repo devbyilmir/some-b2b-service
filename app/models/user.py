@@ -1,7 +1,8 @@
 from app.models.base import Base
 
 from sqlalchemy import Boolean, Integer, String, true
-from sqlalchemy.orm import mapped_column, Mapped
+from sqlalchemy.orm import mapped_column, Mapped, relationship
+
 
 
 class User(Base):
@@ -34,4 +35,8 @@ class User(Base):
         default=True,
         server_default=true(),
         nullable=False,
+    )
+
+    orders: Mapped[list["Order"]] = relationship(  # type: ignore
+        back_populates="user"
     )
