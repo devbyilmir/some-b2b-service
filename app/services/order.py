@@ -27,11 +27,11 @@ async def get_sum_amount(
 
 async def get_user_orders(
         session: AsyncSession,
-        n: int,
+        user_id: int,
 ) -> list[Row]:
     stmt = (
         select(Order)
-        .where(Order.user_id == n)
+        .where(Order.user_id == user_id)
     )
 
     result = await session.execute(stmt)

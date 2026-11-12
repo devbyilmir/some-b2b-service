@@ -1,9 +1,13 @@
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.core.exceptions import EmailAlreadyExists, UsernameAlreadyExists
 
 from app.models.user import User
+from app.models.order import Order
+
 from app.schemas.user import UserCreate
 
 
