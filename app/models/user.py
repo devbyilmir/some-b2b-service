@@ -1,8 +1,13 @@
+from typing import TYPE_CHECKING
+
 from app.models.base import Base
 
 from sqlalchemy import Boolean, Integer, String, true
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 
+
+if TYPE_CHECKING:
+    from app.models.order import Order
 
 
 class User(Base):
@@ -37,6 +42,6 @@ class User(Base):
         nullable=False,
     )
 
-    orders: Mapped[list["Order"]] = relationship(  # type: ignore
+    orders: Mapped[list["Order"]] = relationship(
         back_populates="user"
     )

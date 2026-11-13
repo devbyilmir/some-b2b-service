@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User
 from app.services.user import create_user_service
 from app.schemas.user import UserCreate
-
+from app.services.user import get_user_with_orders_s, get_user_with_orders_j
 
 router = APIRouter(
     prefix="/users",
@@ -59,3 +59,35 @@ async def create_user(
         "username": user.username,
         "email": user.email,
     }
+
+
+@router.get("/test/selectinload")
+async def test_selectinload(
+    session: AsyncSession = Depends(get_db),
+):
+    users = await get_user_with_orders_s(session)
+
+    return [
+        {
+            "id": user.id,
+            "username": user.username,
+            "orders_count": len(user.orders),
+        }
+        for user in users
+    ]
+
+
+@router.get("/test/joinedload")
+async def test_joinedload(
+    session: AsyncSession = Depends(get_db),
+):
+    users = await get_user_with_orders_j(session)
+
+    return [
+        {
+            "id": user.id,
+            "username": user.username,
+            "orders_count": len(user.orders),
+        }
+        for user in users
+    ]

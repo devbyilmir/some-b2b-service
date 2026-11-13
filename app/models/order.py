@@ -3,6 +3,10 @@ from app.models.base import Base
 from sqlalchemy import Integer, String, ForeignKey
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 class Order(Base):
@@ -29,7 +33,7 @@ class Order(Base):
         nullable=False
     )
 
-    user: Mapped["User"] = relationship(  # type: ignore
+    user: Mapped["User"] = relationship(
         back_populates="orders"
     )
 
