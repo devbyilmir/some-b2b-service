@@ -31,7 +31,12 @@ async def create_user_service(
         await session.rollback()
 
         if e.orig.sqlstate == "23505":
-            constraint = e.orig.constraint_name
+            original_error = e.orig.__cause__
+
+            constraint = (
+                getattr(e.orig, "constraint_name", None)
+                or getattr(original_error, "constraint_name", None)
+            )
 
             if constraint == "users_email_key":
                 raise EmailAlreadyExists from e
