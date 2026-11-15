@@ -1,7 +1,6 @@
 import time
-
 from fastapi import FastAPI, Request
-import asyncio
+from prometheus_fastapi_instrumentator import Instrumentator
 from contextlib import asynccontextmanager
 
 from app.routers.user import router
@@ -19,6 +18,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+Instrumentator().instrument(app).expose(app)
 
 @app.middleware('http')
 async def timing_middleware(request: Request, call_next):
