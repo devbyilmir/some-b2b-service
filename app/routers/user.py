@@ -1,12 +1,12 @@
 import asyncio
-
+import json
 from fastapi import BackgroundTasks, Depends, APIRouter, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from redis.exceptions import RedisError
 
+from app.core.redis import RedisDep
 from app.core.exceptions import EmailAlreadyExists, UsernameAlreadyExists
 from app.database import get_db
-
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.models.user import User
 from app.services.user import create_user_service
 from app.schemas.user import UserCreate
@@ -21,23 +21,50 @@ router = APIRouter(
 @router.get("/{user_id}")
 async def get_user(
     user_id: int,
+    redis: RedisDep,
     session: AsyncSession = Depends(get_db),
 ):
+    cache_key = f"user:{user_id}"
+
+    # 1. Пытаемся получить данные из Redis
+    try:
+        cached_user = await redis.get(cache_key)
+
+        if cached_user is not None:
+            return json.loads(cached_user)
+
+    except RedisError:
+        pass
+
+    # 2. Cache miss — обращаемся к PostgreSQL
     user = await session.get(User, user_id)
 
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
 
-    return {
+    user_data = {
         "id": user.id,
         "username": user.username,
         "email": user.email,
     }
 
+    # 3. Сохраняем результат в Redis
+    try:
+        await redis.set(
+            cache_key,
+            json.dumps(user_data),
+            ex=300,
+        )
+    except RedisError:
+        pass
+
+    return user_data
+
 
 async def log_user_registration(user_id: int):
-        await asyncio.sleep(5)
-        print(f"user {user_id} just registered!")
+    await asyncio.sleep(5)
+    print(f"user {user_id} just registered!")
+
 
 @router.post("/")
 async def create_user(
@@ -63,7 +90,7 @@ async def create_user(
         )
 
     background_tasks.add_task(log_user_registration, user_id)
-    
+
     return {
         "id": user.id,
         "username": user.username,
