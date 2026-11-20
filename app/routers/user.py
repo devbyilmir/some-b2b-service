@@ -8,8 +8,8 @@ from app.core.redis import RedisDep
 from app.core.exceptions import EmailAlreadyExists, UsernameAlreadyExists
 from app.database import get_db
 from app.models.user import User
-from app.services.user import create_user_service
-from app.schemas.user import UserCreate
+from app.services.user import create_user_service, update_user_service
+from app.schemas.user import UserCreate, UserUpdate
 from app.services.user import get_user_with_orders_s, get_user_with_orders_j
 
 router = APIRouter(
@@ -59,6 +59,56 @@ async def get_user(
         pass
 
     return user_data
+
+@router.patch("/{user_id}")
+async def update_user(
+    user_id: int,
+    data: UserUpdate,
+    redis: RedisDep,
+    session: AsyncSession = Depends(get_db),
+):
+    user = await session.get(User, user_id)
+
+    if user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
+
+    update_data = data.model_dump(exclude_unset=True)
+
+    if not update_data:
+        raise HTTPException(
+            status_code=400,
+            detail="No fields to update",
+        )
+
+    if any(value is None for value in update_data.values()):
+        raise HTTPException(
+            status_code=422,
+            detail="Fields cannot be null",
+        )
+
+    try:
+        user = await update_user_service(user, data)
+
+        await session.commit()
+
+    except Exception:
+        await session.rollback()
+        raise
+
+    # Инвалидируем кэш
+    try:
+        await redis.delete(f"user:{user_id}")
+    except RedisError:
+        print(f"WARNING: failed to invalidate cache for user:{user_id}")
+
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+    }   
 
 
 async def log_user_registration(user_id: int):

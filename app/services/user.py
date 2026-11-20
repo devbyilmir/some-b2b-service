@@ -8,7 +8,7 @@ from app.core.exceptions import EmailAlreadyExists, UsernameAlreadyExists
 from app.models.order import Order
 from app.models.user import User
 
-from app.schemas.user import UserCreate
+from app.schemas.user import UserCreate, UserUpdate
 
 
 
@@ -45,6 +45,18 @@ async def create_user_service(
                 raise UsernameAlreadyExists from e
 
         raise
+
+
+async def update_user_service(
+    user: User,
+    data: UserUpdate,
+):
+    update_data = data.model_dump(exclude_unset=True)
+
+    for field, value in update_data.items():
+        setattr(user, field, value)
+
+    return user
 
 
 async def get_user_with_orders(
